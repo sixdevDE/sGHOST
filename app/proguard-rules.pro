@@ -1,0 +1,7 @@
+-keep class com.goterl.** { *; }
+-keep class org.libsodium.** { *; }
+-keep class com.sun.jna.** { *; }
+-dontwarn com.sun.jna.**
+-keep class kotlinx.** { *; }
+-keep class androidx.room.** { *; }
+-keep class com.squareup.moshi.** { *; }

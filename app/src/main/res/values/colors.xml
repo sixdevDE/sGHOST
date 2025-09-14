@@ -1,0 +1,7 @@
+<resources>
+    <color name="brand_primary">#2b104e</color>
+    <color name="on_brand_primary">#FFFFFF</color>
+    <color name="brand_background">#2b104e</color>
+    <color name="on_brand_background">#FFFFFF</color>
+    <color name="ic_launcher_background">#2b104e</color>
+</resources>
