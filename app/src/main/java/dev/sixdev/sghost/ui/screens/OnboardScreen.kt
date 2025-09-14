@@ -12,7 +12,9 @@ import androidx.navigation.NavController
 import dev.sixdev.sghost.App
 import dev.sixdev.sghost.data.MyProfile
 import dev.sixdev.sghost.nav.Routes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import android.app.Application
 
@@ -25,36 +27,82 @@ fun OnboardScreen(nav: NavController) {
     var master by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("sGHOST – Erstkonfiguration", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Dein Anzeigename") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = espUrl, onValueChange = { espUrl = it }, label = { Text("ESP Basis-URL") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = master, onValueChange = { master = it }, label = { Text("Neues Master-Passwort setzen") },
-            visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Dein Anzeigename") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = espUrl,
+            onValueChange = { espUrl = it },
+            label = { Text("ESP Basis-URL") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = master,
+            onValueChange = { master = it },
+            label = { Text("Neues Master-Passwort setzen") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
             scope.launch {
                 try {
-                    val kp = app.crypto.genKeyPair()
-                    val myId = UUID.randomUUID().toString()
-                    val skEnc = app.prefs.encryptForPrefs(app.crypto.secretKeyB64(kp).toByteArray())
-                    app.db.profile().save(
-                        MyProfile(
-                            id = myId,
-                            displayName = name.ifBlank { "User-${myId.take(6)}" },
-                            nodeBinding = null,
-                            publicKey = app.crypto.publicKeyB64(kp),
-                            secretKeyEnc = skEnc
+                    withContext(Dispatchers.IO) {
+                        val kp = app.crypto.genKeyPair()
+                        val myId = UUID.randomUUID().toString()
+                        val skEnc =
+                            app.prefs.encryptForPrefs(app.crypto.secretKeyB64(kp).toByteArray())
+                        app.db.profile().save(
+                            MyProfile(
+                                id = myId,
+                                displayName = name.ifBlank { "User-${myId.take(6)}" },
+                                nodeBinding = null,
+                                publicKey = app.crypto.publicKeyB64(kp),
+                                secretKeyEnc = skEnc
+                            )
                         )
-                    )
-                    val prov = dev.sixdev.sghost.esp.Provisioner(app)
-                    prov.pair(espUrl, master)
-                    Toast.makeText(ctx, "Gekoppelt. WLAN im ESP setzen, dann Home.", Toast.LENGTH_LONG).show()
-                    nav.navigate(Routes.Home) { popUpTo(Routes.Onboard) { inclusive = true } }
+                        val prov = dev.sixdev.sghost.esp.Provisioner(app)
+                        prov.pair(espUrl, master)
+                    }
+                    Toast.makeText(
+                        ctx,
+                        "Paired successfully! Now configure Wi-Fi.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    nav.navigate(Routes.WifiConfig)
+                } catch (e: dev.sixdev.sghost.esp.PairingFailedException) {
+                    Toast.makeText(
+                        ctx,
+                        "Pairing failed. HTTP Code: ${e.code}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (e: dev.sixdev.sghost.esp.EmptyBodyException) {
+                    Toast.makeText(
+                        ctx,
+                        "Pairing failed. Empty response from device.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (e: dev.sixdev.sghost.esp.BadJsonException) {
+                    Toast.makeText(
+                        ctx,
+                        "Pairing failed. Invalid data from device.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } catch (e: Exception) {
-                    Toast.makeText(ctx, "Fehler: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        ctx,
+                        "Error: ${e.message ?: "Unknown error"}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }, modifier = Modifier.fillMaxWidth()) {

@@ -14,11 +14,11 @@ import dev.sixdev.sghost.data.Contact
 import dev.sixdev.sghost.qrcode.QRContact
 import java.util.UUID
 
-@OptIn(ExperimentalStdlibApi::class)
 @Composable
 fun QRScanScreen(nav: NavController) {
     val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as App
     var status by remember { mutableStateOf("Bereit") }
+    val scope = rememberCoroutineScope()
 
     val launcher = androidx.activity.compose.rememberLauncherForActivityResult(ScanContract()) { res ->
         val txt = res?.contents
@@ -32,7 +32,7 @@ fun QRScanScreen(nav: NavController) {
                     nodeAddress = qr.nodeAddress,
                     publicKey = qr.publicKey
                 )
-                kotlinx.coroutines.GlobalScope.launch {
+                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     app.db.contacts().upsert(c)
                     status = "Kontakt hinzugefügt"
                 }
@@ -42,11 +42,14 @@ fun QRScanScreen(nav: NavController) {
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Kontakt scannen", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Button(onClick = {
-            val options = ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("QR scannen")
+            val options =
+                ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("QR scannen")
             launcher.launch(options)
         }, modifier = Modifier.fillMaxWidth()) { Text("Scanner starten") }
         Spacer(Modifier.height(12.dp))

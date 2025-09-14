@@ -10,9 +10,11 @@ import dev.sixdev.sghost.nav.Routes
 
 @Composable
 fun HomeScreen(nav: NavController) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("sGHOST", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(16.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Button(onClick = { nav.navigate(Routes.MyContact) }, modifier = Modifier.fillMaxWidth()) { Text("Mein Kontakt") }
         Button(onClick = { nav.navigate(Routes.Contacts) }, modifier = Modifier.fillMaxWidth()) { Text("Kontakte") }
         Button(onClick = { nav.navigate(Routes.QRShow) }, modifier = Modifier.fillMaxWidth()) { Text("QR – Meinen Kontakt zeigen") }
